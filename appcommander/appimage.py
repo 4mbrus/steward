@@ -1,8 +1,7 @@
 """Native AppImage management: integration, removal, update sources, update checks and downloads.
 
-Uses the same layout as Gear Lever (~/AppImages/<name>.appimage, icons in ~/AppImages/.icons,
-entries in ~/.local/share/applications/<name>.desktop) so apps integrated by either tool are
-interchangeable. Metadata is extracted with 7z, which reads the SquashFS image without
+Layout: ~/AppImages/<name>.appimage, icons in ~/AppImages/.icons, entries in
+~/.local/share/applications/<name>.desktop. Metadata is extracted with 7z, which reads the SquashFS image without
 executing anything from the AppImage.
 """
 

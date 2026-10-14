@@ -8,7 +8,7 @@ from .utils import icon_image, run_async
 
 
 class InstallPage(Adw.NavigationPage):
-    """Preview of an AppImage file with Install / Run Once actions (like Gear Lever's file view)."""
+    """Preview of an AppImage file with Install / Run Once actions."""
 
     __gsignals__ = {
         'installed': (GObject.SignalFlags.RUN_FIRST, None, (str, str)),  # desktop path, message

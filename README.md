@@ -2,8 +2,10 @@
 
 A GTK4 / libadwaita app that lists every installed application on your system,
 shows where its desktop entry lives, and lets you launch, hide, edit, update or
-uninstall it, whatever format it came from. Its design follows
-[Gear Lever](https://github.com/mijorus/gearlever).
+uninstall it, whatever format it came from.
+
+Inspired by [Gear Lever](https://github.com/mijorus/gearlever) and
+[Main Menu](https://codeberg.org/libre-menu-editor/libre-menu-editor).
 
 | Source     | Detected by                                     | Uninstall                          | Updates                       |
 |------------|-------------------------------------------------|------------------------------------|-------------------------------|
@@ -13,16 +15,15 @@ uninstall it, whatever format it came from. Its design follows
 | AppImage   | `Exec`/`TryExec` points to a `*.AppImage`       | trash the file, entry and icon     | embedded update info or a custom source (see below) |
 | Local      | anything else (web apps, hand-made launchers)   | trash the entry (user dir only)    | —                             |
 
-### AppImages (replaces Gear Lever)
+### AppImages
 
 - **Open** (Ctrl+O) or drop an `.AppImage` on the window to install it: it is moved to
   `~/AppImages/<name>.appimage`, its icon goes to `~/AppImages/.icons/`, and a menu entry is
-  written to `~/.local/share/applications/<name>.desktop`. This is the same layout Gear Lever
-  uses, so apps installed with either tool work in both.
+  written to `~/.local/share/applications/<name>.desktop`.
 - Metadata is read with `7z`, which never runs code from the AppImage.
 - Update sources: the AppImage's built-in `.upd_info` (`gh-releases-zsync`, `zsync`), or a custom
-  **GitHub Releases** / **Direct URL** source set on the app's page. Update sources configured in
-  Gear Lever are imported once into `~/.config/app-commander/appimage-updates.json`.
+  **GitHub Releases** / **Direct URL** source set on the app's page, stored in
+  `~/.config/app-commander/appimage-updates.json`.
 - Updates download beside the old file and replace it atomically; a download that isn't an
   ELF/AppImage is rejected and the installed version kept.
 
