@@ -44,6 +44,8 @@ class Application(Adw.Application):
                         version=VERSION,
                         comments='See every installed application, where its desktop entry lives, '
                                  'and uninstall or update it — whatever package format it came from.',
+                        website='https://github.com/4mbrus/app-commander',
+                        issue_url='https://github.com/4mbrus/app-commander/issues',
                         license_type=Gtk.License.GPL_3_0).present(self.props.active_window)
 
 

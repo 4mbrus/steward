@@ -20,6 +20,9 @@
       <li>Find and clean up broken menu entries</li>
     </ul>
   </description>
+  <url type="homepage">https://github.com/4mbrus/app-commander</url>
+  <url type="bugtracker">https://github.com/4mbrus/app-commander/issues</url>
+  <url type="vcs-browser">https://github.com/4mbrus/app-commander</url>
   <launchable type="desktop-id">io.github.appcommander.AppCommander.desktop</launchable>
   <content_rating type="oars-1.1"/>
   <releases>
