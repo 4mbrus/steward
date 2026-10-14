@@ -1,9 +1,9 @@
 #!/bin/sh
-# Adds App Commander to your app menu (user-level, no root). Run ./install.sh --uninstall to undo.
+# Adds Steward to your app menu (user-level, no root). Run ./install.sh --uninstall to undo.
 set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
-APP_ID=io.github.appcommander.AppCommander
-BIN="$HOME/.local/bin/app-commander"
+APP_ID=io.github._4mbrus.Steward
+BIN="$HOME/.local/bin/steward"
 ENTRY="${XDG_DATA_HOME:-$HOME/.local/share}/applications/$APP_ID.desktop"
 ICON="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/scalable/apps/$APP_ID.svg"
 
@@ -15,13 +15,13 @@ fi
 
 mkdir -p "$(dirname "$BIN")" "$(dirname "$ENTRY")" "$(dirname "$ICON")"
 cp "$DIR/data/icons/hicolor/scalable/apps/$APP_ID.svg" "$ICON"
-ln -sf "$DIR/app-commander" "$BIN"
+ln -sf "$DIR/bin/steward" "$BIN"
 cat > "$ENTRY" <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=App Commander
+Name=Steward
 Comment=Manage installed applications, their desktop entries and updates
-Exec=$DIR/app-commander
+Exec=$DIR/bin/steward
 Icon=$APP_ID
 Terminal=false
 Categories=GTK;System;PackageManager;

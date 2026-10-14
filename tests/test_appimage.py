@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from appcommander import appimage, scanner
+from steward import appimage, scanner
 
 
 class EmbeddedInfoTest(unittest.TestCase):

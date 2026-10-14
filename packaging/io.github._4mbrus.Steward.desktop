@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=App Commander
+Name=Steward
 Comment=Manage installed applications, their menu entries and updates
-Exec=app-commander
-Icon=io.github.appcommander.AppCommander
+Exec=steward
+Icon=io.github._4mbrus.Steward
 Terminal=false
 Categories=GTK;GNOME;System;PackageManager;
 Keywords=uninstall;update;desktop entry;menu editor;flatpak;appimage;apt;snap;

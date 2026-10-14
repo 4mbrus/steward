@@ -1,0 +1,11 @@
+#!/usr/bin/python3
+# Uses the system Python on purpose: PyGObject comes from the distro (python3-gi).
+import os
+import sys
+
+# bin/steward -> the checkout root, which holds the steward package
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from steward.main import main  # noqa: E402
+
+sys.exit(main())

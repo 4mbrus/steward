@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 
-from appcommander import entries, scanner
+from steward import entries, scanner
 
 
 def write(path, text):

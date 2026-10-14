@@ -4,8 +4,8 @@ import threading
 import unittest
 from unittest import mock
 
-from appcommander import backends, entries, scanner
-from appcommander.utils import relative_time
+from steward import backends, entries, scanner
+from steward.utils import relative_time
 
 ENTRY = '[Desktop Entry]\nType=Application\nName=Chat\nExec=true --chat\n'
 
@@ -114,3 +114,24 @@ class OperationTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RenameCompatibilityTest(unittest.TestCase):
+    def test_settings_move_from_old_app_name(self):
+        from steward.utils import migrate_legacy_config
+        with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {'XDG_CONFIG_HOME': d}):
+            os.makedirs(os.path.join(d, 'app-commander'))
+            with open(os.path.join(d, 'app-commander', 'settings.json'), 'w') as f:
+                f.write('{"sort": "size"}')
+            migrate_legacy_config()
+            self.assertFalse(os.path.exists(os.path.join(d, 'app-commander')))
+            self.assertIn('size', open(os.path.join(d, 'steward', 'settings.json')).read())
+            migrate_legacy_config()  # second run is a no-op
+
+    def test_overrides_from_old_app_name_are_still_ours(self):
+        with tempfile.NamedTemporaryFile('w', suffix='.desktop', delete=False) as f:
+            f.write('[Desktop Entry]\nName=X\nX-AppCommander-Override=true\n')
+        try:
+            self.assertTrue(entries.is_our_override(f.name))
+        finally:
+            os.unlink(f.name)

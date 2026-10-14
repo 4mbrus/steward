@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.appcommander.AppCommander</id>
+  <id>io.github._4mbrus.Steward</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
-  <name>App Commander</name>
+  <name>Steward</name>
   <summary>Manage every installed application in one place</summary>
-  <developer id="io.github.appcommander">
+  <developer id="io.github._4mbrus">
     <name>Ambrus Fodor</name>
   </developer>
   <description>
     <p>
-      App Commander lists all installed applications, whether they came from apt, Flatpak,
+      Steward lists all installed applications, whether they came from apt, Flatpak,
       Snap, an AppImage or a hand-made launcher, and shows where each desktop entry lives.
     </p>
     <ul>
@@ -20,10 +20,10 @@
       <li>Find and clean up broken menu entries</li>
     </ul>
   </description>
-  <url type="homepage">https://github.com/4mbrus/app-commander</url>
-  <url type="bugtracker">https://github.com/4mbrus/app-commander/issues</url>
-  <url type="vcs-browser">https://github.com/4mbrus/app-commander</url>
-  <launchable type="desktop-id">io.github.appcommander.AppCommander.desktop</launchable>
+  <url type="homepage">https://github.com/4mbrus/steward</url>
+  <url type="bugtracker">https://github.com/4mbrus/steward/issues</url>
+  <url type="vcs-browser">https://github.com/4mbrus/steward</url>
+  <launchable type="desktop-id">io.github._4mbrus.Steward.desktop</launchable>
   <content_rating type="oars-1.1"/>
   <releases>
     <release version="@VERSION@" date="@DATE@"/>

@@ -6,7 +6,9 @@ import re
 
 from .scanner import App, user_data_dir
 
-OVERRIDE_MARKER = 'X-AppCommander-Override'
+OVERRIDE_MARKER = 'X-Steward-Override'
+# written by versions released as "App Commander"; still recognised so their overrides can be reset
+LEGACY_OVERRIDE_MARKER = 'X-AppCommander-Override'
 
 
 def set_key(text: str, key: str, value: str) -> str:
@@ -60,7 +62,8 @@ def set_hidden(app: App, hidden: bool) -> str:
 def is_our_override(path: str) -> bool:
     try:
         with open(path, encoding='utf-8', errors='replace') as f:
-            return f'{OVERRIDE_MARKER}=true' in f.read()
+            text = f.read()
+        return f'{OVERRIDE_MARKER}=true' in text or f'{LEGACY_OVERRIDE_MARKER}=true' in text
     except OSError:
         return False
 
@@ -129,7 +132,7 @@ def apply_edits(app: App, edits: dict) -> str:
 
 def store_icon(app: App, source: str) -> str:
     """Copy a chosen image next to user data so the entry keeps working if the original moves."""
-    icons = os.path.join(user_data_dir(), 'app-commander', 'icons')
+    icons = os.path.join(user_data_dir(), 'steward', 'icons')
     os.makedirs(icons, exist_ok=True)
     with open(source, 'rb') as f:
         data = f.read()
@@ -193,7 +196,7 @@ def set_autostart(app: App, enabled: bool) -> str:
 
 # ---------------------------------------------------------------- new launchers
 
-CREATED_MARKER = 'X-AppCommander-Created'
+CREATED_MARKER = 'X-Steward-Created'
 
 
 def _escape(value: str) -> str:

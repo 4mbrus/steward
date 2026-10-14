@@ -12,7 +12,7 @@ from .utils import run_async
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
-        super().__init__(title='App Commander', default_width=760, default_height=780, **kwargs)
+        super().__init__(title='Steward', default_width=760, default_height=780, **kwargs)
         self.apps: list = []
         self.appimage_checks: dict = {}  # appimage path -> UpdateCheck, survives reloads
         self._open_after_load = None  # desktop file to show once the next scan finishes
@@ -39,7 +39,7 @@ class MainWindow(Adw.ApplicationWindow):
         section.append('Refresh Package Lists…', 'win.refresh-apt')
         menu.append_section(None, section)
         about = Gio.Menu()
-        about.append('About App Commander', 'app.about')
+        about.append('About Steward', 'app.about')
         menu.append_section(None, about)
         header.pack_end(Gtk.MenuButton(icon_name='open-menu-symbolic', menu_model=menu, primary=True,
                                        tooltip_text='Main Menu'))
@@ -65,7 +65,7 @@ class MainWindow(Adw.ApplicationWindow):
         list_toolbar.add_top_bar(header)
 
         self.nav = Adw.NavigationView()
-        self.nav.add(Adw.NavigationPage(child=list_toolbar, title='App Commander', tag='list'))
+        self.nav.add(Adw.NavigationPage(child=list_toolbar, title='Steward', tag='list'))
         self.nav.connect('popped', self._on_page_popped)
 
         drop = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)

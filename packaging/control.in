@@ -1,4 +1,4 @@
-Package: app-commander
+Package: steward
 Version: @VERSION@
 Section: admin
 Priority: optional
@@ -7,8 +7,10 @@ Maintainer: Ambrus Fodor <ambrusfodor.online@gmail.com>
 Installed-Size: @SIZE@
 Depends: python3 (>= 3.11), python3-gi, gir1.2-gtk-4.0 (>= 4.10), gir1.2-adw-1 (>= 1.7), 7zip | p7zip-full, pkexec | policykit-1
 Suggests: flatpak, snapd
+Conflicts: app-commander
+Replaces: app-commander
 Description: manage every installed application in one place
- App Commander lists all installed applications regardless of how they were
+ Steward lists all installed applications regardless of how they were
  installed (apt, Flatpak, Snap, AppImage or hand-made launchers), shows where
  each desktop entry lives, and lets you launch, update or uninstall them.
  .

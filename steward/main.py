@@ -8,8 +8,10 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gdk, Gio, Gtk  # noqa: E402
 
-APP_ID = 'io.github.appcommander.AppCommander'
-VERSION = '0.2.0'
+from .utils import migrate_legacy_config  # noqa: E402
+
+APP_ID = 'io.github._4mbrus.Steward'
+VERSION = '0.3.0'
 
 
 class Application(Adw.Application):
@@ -18,6 +20,7 @@ class Application(Adw.Application):
 
     def do_startup(self):
         Adw.Application.do_startup(self)
+        migrate_legacy_config()
         css = Gtk.CssProvider()
         css.load_from_path(os.path.join(os.path.dirname(__file__), 'style.css'))
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css,
@@ -40,12 +43,12 @@ class Application(Adw.Application):
         win.present()
 
     def _on_about(self, *_):
-        Adw.AboutDialog(application_name='App Commander', application_icon=APP_ID,
+        Adw.AboutDialog(application_name='Steward', application_icon=APP_ID,
                         version=VERSION,
                         comments='See every installed application, where its desktop entry lives, '
                                  'and uninstall or update it — whatever package format it came from.',
-                        website='https://github.com/4mbrus/app-commander',
-                        issue_url='https://github.com/4mbrus/app-commander/issues',
+                        website='https://github.com/4mbrus/steward',
+                        issue_url='https://github.com/4mbrus/steward/issues',
                         license_type=Gtk.License.GPL_3_0).present(self.props.active_window)
 
 

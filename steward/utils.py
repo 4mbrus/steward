@@ -77,7 +77,18 @@ def relative_time(timestamp, now=None) -> str:
 
 
 SETTINGS_PATH = os.path.join(os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config'),
-                             'app-commander', 'settings.json')
+                             'steward', 'settings.json')
+
+
+def migrate_legacy_config():
+    """Move settings written while the app was called "App Commander" to the new location."""
+    config = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
+    old, new = os.path.join(config, 'app-commander'), os.path.join(config, 'steward')
+    if os.path.isdir(old) and not os.path.exists(new):
+        try:
+            os.rename(old, new)
+        except OSError as e:
+            logging.warning(f'Could not move {old} to {new}: {e}')
 
 
 def load_setting(key: str, default=None):

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from appcommander import entries, scanner
+from steward import entries, scanner
 
 ENTRY = ('[Desktop Entry]\nType=Application\nName=Files\nName[en_US]=Files US\nName[hu]=Fájlok\n'
          'Keywords=folder;\nExec=nautilus\nIcon=org.gnome.Nautilus\n\n[Desktop Action new]\nName=New\n')

@@ -28,10 +28,10 @@ from .scanner import parse_desktop_file, user_data_dir
 APPIMAGES_DIR = os.path.expanduser('~/AppImages')
 ICONS_DIR = os.path.join(APPIMAGES_DIR, '.icons')
 CONFIG_PATH = os.path.join(os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config'),
-                           'app-commander', 'appimage-updates.json')
+                           'steward', 'appimage-updates.json')
 GEARLEVER_CONF = os.path.expanduser('~/.var/app/it.mijorus.gearlever/config/gearlever.conf')
-MANAGED_MARKER = 'X-AppCommander-Managed'
-USER_AGENT = 'AppCommander (+https://github.com/4mbrus/app-commander)'
+MANAGED_MARKER = 'X-Steward-Managed'
+USER_AGENT = 'Steward (+https://github.com/4mbrus/steward)'
 
 
 def applications_dir() -> str:
@@ -378,7 +378,7 @@ def inspect(path: str) -> AppImageInfo:
         raise ValueError('This file is not an AppImage')
     if not shutil.which('7z'):
         raise RuntimeError('7z is needed to read AppImages (install the “7zip” package)')
-    tmpdir = tempfile.mkdtemp(prefix='app-commander-')
+    tmpdir = tempfile.mkdtemp(prefix='steward-')
     root = os.path.join(tmpdir, 'root')
     subprocess.run(['7z', 'x', path, f'-o{root}', '-y', '-bso0', '-bsp0',
                     '-ir!*.desktop', '-ir0!.DirIcon', '-ir0!*.png', '-ir0!*.svg',
