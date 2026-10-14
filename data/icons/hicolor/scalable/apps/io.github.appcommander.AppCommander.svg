@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="tray" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a5670"/>
+      <stop offset="1" stop-color="#2e3648"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- tray with depth -->
+  <rect x="10" y="18" width="108" height="100" rx="24" fill="#1b2130"/>
+  <rect x="10" y="12" width="108" height="100" rx="24" fill="url(#tray)"/>
+  <rect x="11" y="13" width="106" height="98" rx="23" fill="none" stroke="#fff" stroke-opacity="0.12" stroke-width="2"/>
+
+  <!-- tiles: system (red), flatpak (blue), appimage (purple), local (green) -->
+  <g>
+    <rect x="20" y="21" width="40" height="40" rx="11" fill="#a51d2d"/>
+    <rect x="20" y="18" width="40" height="40" rx="11" fill="#e01b24"/>
+    <rect x="20" y="18" width="40" height="20" rx="11" fill="url(#shine)"/>
+    <circle cx="40" cy="38" r="9" fill="#fff"/>
+  </g>
+  <g>
+    <rect x="68" y="21" width="40" height="40" rx="11" fill="#1a5fb4"/>
+    <rect x="68" y="18" width="40" height="40" rx="11" fill="#3584e4"/>
+    <rect x="68" y="18" width="40" height="20" rx="11" fill="url(#shine)"/>
+    <path d="M88 28.5 L97.5 46 H78.5 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+  <g>
+    <rect x="20" y="69" width="40" height="40" rx="11" fill="#26a269"/>
+    <rect x="20" y="66" width="40" height="40" rx="11" fill="#33d17a"/>
+    <rect x="20" y="66" width="40" height="20" rx="11" fill="url(#shine)"/>
+    <rect x="31" y="77" width="18" height="18" rx="5" fill="#fff"/>
+  </g>
+  <g>
+    <rect x="68" y="69" width="40" height="40" rx="11" fill="#613583"/>
+    <rect x="68" y="66" width="40" height="40" rx="11" fill="#9141ac"/>
+    <rect x="68" y="66" width="40" height="20" rx="11" fill="url(#shine)"/>
+    <!-- sliders: the "commander" tile -->
+    <g stroke="#fff" stroke-opacity="0.75" stroke-width="3" stroke-linecap="round">
+      <line x1="78" y1="75" x2="98" y2="75"/>
+      <line x1="78" y1="86" x2="98" y2="86"/>
+      <line x1="78" y1="97" x2="98" y2="97"/>
+    </g>
+    <g fill="#fff">
+      <circle cx="91" cy="75" r="4.5"/>
+      <circle cx="83.5" cy="86" r="4.5"/>
+      <circle cx="92.5" cy="97" r="4.5"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,10 @@
+#!/usr/bin/python3
+# Uses the system Python on purpose: PyGObject comes from the distro (python3-gi).
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+from appcommander.main import main  # noqa: E402
+
+sys.exit(main())

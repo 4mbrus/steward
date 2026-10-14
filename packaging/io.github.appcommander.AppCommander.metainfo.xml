@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.appcommander.AppCommander</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>App Commander</name>
+  <summary>Manage every installed application in one place</summary>
+  <developer id="io.github.appcommander">
+    <name>Ambrus Fodor</name>
+  </developer>
+  <description>
+    <p>
+      App Commander lists all installed applications, whether they came from apt, Flatpak,
+      Snap, an AppImage or a hand-made launcher, and shows where each desktop entry lives.
+    </p>
+    <ul>
+      <li>Launch, update or uninstall any application</li>
+      <li>Install, update and remove AppImages</li>
+      <li>Edit names, icons, keywords and categories of menu entries in place</li>
+      <li>Find and clean up broken menu entries</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.appcommander.AppCommander.desktop</launchable>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@VERSION@" date="@DATE@"/>
+  </releases>
+</component>
