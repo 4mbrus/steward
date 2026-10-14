@@ -59,3 +59,47 @@ def _finish(fn, result):
         fn(result)
     except GLib.Error as e:
         logging.warning(e.message)
+
+
+def relative_time(timestamp, now=None) -> str:
+    """'today', 'yesterday', '3 days ago', '2 weeks ago', '5 months ago', '2 years ago'."""
+    import time
+    days = int(((now or time.time()) - timestamp) // 86400)
+    if days <= 0:
+        return 'today'
+    if days == 1:
+        return 'yesterday'
+    for size, unit in ((365, 'year'), (30, 'month'), (7, 'week'), (1, 'day')):
+        if days >= size:
+            n = days // size
+            return f'{n} {unit}{"s" if n > 1 else ""} ago'
+    return 'today'
+
+
+SETTINGS_PATH = os.path.join(os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config'),
+                             'app-commander', 'settings.json')
+
+
+def load_setting(key: str, default=None):
+    import json
+    try:
+        with open(SETTINGS_PATH) as f:
+            return json.load(f).get(key, default)
+    except (OSError, ValueError):
+        return default
+
+
+def save_setting(key: str, value):
+    import json
+    try:
+        with open(SETTINGS_PATH) as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        data = {}
+    data[key] = value
+    try:
+        os.makedirs(os.path.dirname(SETTINGS_PATH), exist_ok=True)
+        with open(SETTINGS_PATH, 'w') as f:
+            json.dump(data, f, indent=2)
+    except OSError:
+        pass  # a preference that can't be saved isn't worth interrupting anyone over

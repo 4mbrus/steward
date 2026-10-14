@@ -29,6 +29,14 @@ Inspired by [Gear Lever](https://github.com/mijorus/gearlever) and
 
 ### Other features
 
+- **Start at Login** switch per app (uses `~/.config/autostart`; an app's own autostart file, with
+  options like `--minimized`, is kept and only switched on or off).
+- **New Launcher…** (Ctrl+N) creates a menu entry for any program, script or AppImage; its page
+  opens right away so you can set the icon, keywords and categories.
+- **Live output** for updates and uninstalls, with a Cancel button for Flatpak operations and
+  AppImage downloads (apt and snap aren't cancellable: interrupting them can break the system).
+- **Sort** by name, size (largest first) or most recently installed/updated; each row shows how
+  long ago the app was installed or last updated.
 - **Broken entries**: launchers whose program no longer exists get a *Broken* badge and filter,
   with a one-click *Remove Entry* for the ones in your home folder.
 
@@ -62,7 +70,7 @@ The launcher uses `/usr/bin/python3` explicitly so a conda/venv Python on `PATH`
 
 ```sh
 ./build-deb.sh                                    # -> dist/app-commander_<version>_all.deb
-sudo apt install ./dist/app-commander_0.1.0_all.deb
+sudo apt install ./dist/app-commander_0.2.0_all.deb
 ```
 
 The package installs the code to `/usr/share/app-commander`, a launcher at `/usr/bin/app-commander`,

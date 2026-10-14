@@ -31,7 +31,7 @@ CONFIG_PATH = os.path.join(os.environ.get('XDG_CONFIG_HOME') or os.path.expandus
                            'app-commander', 'appimage-updates.json')
 GEARLEVER_CONF = os.path.expanduser('~/.var/app/it.mijorus.gearlever/config/gearlever.conf')
 MANAGED_MARKER = 'X-AppCommander-Managed'
-USER_AGENT = 'AppCommander/0.2 (+https://github.com)'
+USER_AGENT = 'AppCommander (+https://github.com/4mbrus/app-commander)'
 
 
 def applications_dir() -> str:
@@ -292,7 +292,8 @@ def check_update(appimage_path: str) -> UpdateCheck:
         return UpdateCheck(None, error=str(e))
 
 
-def download_update(appimage_path: str, url: str, progress: Callable[[float], None] = None) -> tuple:
+def download_update(appimage_path: str, url: str, progress: Callable[[float], None] = None,
+                    cancelled: Callable[[], bool] = None) -> tuple:
     """Replace the AppImage in place with the file at `url`. Returns (ok, log)."""
     directory = os.path.dirname(appimage_path)
     fd, tmp = tempfile.mkstemp(prefix='.download-', dir=directory)
@@ -302,6 +303,8 @@ def download_update(appimage_path: str, url: str, progress: Callable[[float], No
             etag = r.headers.get('ETag')
             done = 0
             while chunk := r.read(1 << 20):
+                if cancelled and cancelled():
+                    raise InterruptedError('cancelled')
                 out.write(chunk)
                 done += len(chunk)
                 if progress and total:

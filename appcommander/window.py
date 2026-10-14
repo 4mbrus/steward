@@ -2,10 +2,11 @@ import os
 
 from gi.repository import Adw, Gdk, Gio, GLib, GObject, Gtk
 
-from . import appimage, backends, scanner
+from . import appimage, backends, entries, scanner
 from .app_details import AppDetails
 from .app_list import AppList
 from .install_page import InstallPage
+from .operation_view import OperationView
 from .utils import run_async
 
 
@@ -14,6 +15,8 @@ class MainWindow(Adw.ApplicationWindow):
         super().__init__(title='App Commander', default_width=760, default_height=780, **kwargs)
         self.apps: list = []
         self.appimage_checks: dict = {}  # appimage path -> UpdateCheck, survives reloads
+        self._open_after_load = None  # desktop file to show once the next scan finishes
+        self._load_generation = 0
         self.update_keys: set = set()  # survives reloads after an update check
         self.details: AppDetails = None
 
@@ -31,6 +34,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         menu = Gio.Menu()
         section = Gio.Menu()
+        section.append('New Launcher…', 'win.new-launcher')
         section.append('Show Hidden Entries', 'win.show-hidden')
         section.append('Refresh Package Lists…', 'win.refresh-apt')
         menu.append_section(None, section)
@@ -92,6 +96,7 @@ class MainWindow(Adw.ApplicationWindow):
                 self.get_application().set_accels_for_action(f'win.{name}', list(accels))
 
         add('reload', self.reload, ['<Control>r', 'F5'])
+        add('new-launcher', self._on_new_launcher, ['<Control>n'])
         add('open-appimage', self._on_open_appimage, ['<Control>o'])
         add('search', lambda: self.search_btn.set_active(not self.search_btn.get_active()), ['<Control>f'])
         add('refresh-apt', lambda: self.check_updates(refresh_apt=True))
@@ -138,14 +143,20 @@ class MainWindow(Adw.ApplicationWindow):
             self.stack.set_visible_child_name('loading')
         self.refresh_btn.set_sensitive(False)
 
+        self._load_generation += 1
+        generation = self._load_generation
+
         def work():
             apps = scanner.scan()
             backends.load_metadata(apps)
             return apps
 
-        run_async(work, self._on_loaded)
+        run_async(work, lambda result, error: self._on_loaded(result, error, generation))
 
-    def _on_loaded(self, result, error):
+    def _on_loaded(self, result, error, generation=None):
+        # scans run in parallel when reloads overlap; only the newest one may update the UI
+        if generation is not None and generation != self._load_generation:
+            return
         self.refresh_btn.set_sensitive(True)
         if error:
             self.toast(f'Scan failed: {error}')
@@ -159,6 +170,11 @@ class MainWindow(Adw.ApplicationWindow):
         if self.update_keys:
             self.app_list.set_updates_state(('done', sum(a.update_available for a in self.apps)))
         self.stack.set_visible_child_name('list')
+        if self._open_after_load:
+            created = next((a for a in self.apps if a.effective.path == self._open_after_load), None)
+            self._open_after_load = None
+            if created:
+                self._on_selected_app(None, created)
         if self.details:
             match = next((a for a in self.apps if a.desktop_id == self.details.app.desktop_id), None)
             if match:
@@ -195,27 +211,104 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.set_response_appearance('update', Adw.ResponseAppearance.SUGGESTED)
 
         def on_response(_d, response):
-            if response != 'update':
-                return
-            self.app_list.update_all_btn.set_sensitive(False)
-            self.app_list.update_all_btn.set_label('Updating…')
-            run_async(backends.run_commands, lambda r, e: self._on_update_all_done(targets, r, e),
-                      backends.update_command(targets))
+            if response == 'update':
+                self._run_update_all(targets)
 
         dialog.connect('response', on_response)
         dialog.present(self)
 
-    def _on_update_all_done(self, targets, result, error):
-        self.app_list.update_all_btn.set_sensitive(True)
-        self.app_list.update_all_btn.set_label('Update all')
-        ok, log = result if result else (False, str(error))
-        if ok:
-            for a in targets:
-                self.update_keys.discard(self._update_key(a))
-            self.toast('All updates installed')
-        else:
-            self.show_log('Some updates failed', log)
-        self.reload()
+    def _run_update_all(self, targets):
+        view = OperationView(margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
+        view.expander.set_expanded(True)
+        close = Gtk.Button(label='Close', sensitive=False)
+        header = Adw.HeaderBar(show_end_title_buttons=False)
+        header.pack_end(close)
+        toolbar = Adw.ToolbarView(content=view)
+        toolbar.add_top_bar(header)
+        n = len(targets)
+        dialog = Adw.Dialog(title=f'Updating {n} Application{"s" if n > 1 else ""}', child=toolbar,
+                            content_width=620, can_close=False)
+        close.connect('clicked', lambda *_: dialog.close())
+        dialog.present(self)
+
+        op = view.start(f'Updating {n} application{"s" if n > 1 else ""}…')
+        self.app_list.update_all_btn.set_sensitive(False)
+
+        def done(result, error):
+            ok = bool(result and result[0])
+            if error:
+                op.output(str(error))
+            if ok:
+                for a in targets:
+                    self.update_keys.discard(self._update_key(a))
+                    self.appimage_checks.pop(a.appimage_path, None)
+            view.finish('All updates installed' if ok else 'Cancelled' if op.cancelled
+                        else 'Some updates failed — see the output', keep=True)
+            dialog.set_can_close(True)
+            close.set_sensitive(True)
+            close.add_css_class('suggested-action')
+            self.app_list.update_all_btn.set_sensitive(True)
+            self.reload()
+
+        run_async(backends.run_commands, done, backends.update_command(targets), op)
+
+    # ------------------------------------------------------------ new launcher
+
+    def _on_new_launcher(self):
+        group = Adw.PreferencesGroup()
+        name = Adw.EntryRow(title='Name')
+        command = Adw.EntryRow(title='Command')
+        browse = Gtk.Button(icon_name='document-open-symbolic', tooltip_text='Choose a program or script',
+                            valign=Gtk.Align.CENTER, css_classes=['flat'])
+        command.add_suffix(browse)
+        terminal = Adw.SwitchRow(title='Run in Terminal')
+        for r in (name, command, terminal):
+            group.add(r)
+
+        dialog = Adw.AlertDialog(heading='New Launcher', extra_child=group, close_response='cancel',
+                                 default_response='create',
+                                 body='Adds an app to your menu. You can set its icon, keywords and '
+                                      'categories on its page afterwards.')
+        dialog.add_response('cancel', 'Cancel')
+        dialog.add_response('create', 'Create')
+        dialog.set_response_appearance('create', Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_response_enabled('create', False)
+
+        def validate(*_):
+            dialog.set_response_enabled('create', bool(name.get_text().strip() and command.get_text().strip()))
+        name.connect('changed', validate)
+        command.connect('changed', validate)
+
+        def on_browse(*_):
+            def done(d, result):
+                try:
+                    file = d.open_finish(result)
+                except GLib.Error:
+                    return
+                if file and file.get_path():
+                    command.set_text(appimage.desktop_quote(file.get_path()))
+                    if not name.get_text().strip():
+                        name.set_text(os.path.splitext(file.get_basename())[0].replace('_', ' ').title())
+            Gtk.FileDialog(title='Choose a Program or Script').open(self, None, done)
+        browse.connect('clicked', on_browse)
+
+        def on_response(_d, response):
+            if response != 'create':
+                return
+            try:
+                path = entries.create_launcher(name.get_text().strip(), command.get_text().strip(),
+                                               terminal.get_active())
+            except OSError as e:
+                self.show_log('Could not create the launcher', str(e))
+                return
+            df = scanner.DesktopFile(path, os.path.basename(path), '', scanner.parse_desktop_file(path) or {})
+            missing = scanner.missing_program(df)
+            self.toast(f'Launcher created, but “{missing}” was not found' if missing else 'Launcher created')
+            self._open_after_load = path
+            self.reload()
+
+        dialog.connect('response', on_response)
+        dialog.present(self)
 
     # ------------------------------------------------------------ navigation
 

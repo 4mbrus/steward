@@ -59,6 +59,8 @@ class App:
     appimage_path: Optional[str] = None
     version: Optional[str] = None
     size: Optional[str] = None
+    size_bytes: Optional[int] = None
+    installed_at: Optional[float] = None  # install or last update time (epoch seconds)
     origin: Optional[str] = None
     update_available: bool = False
     broken: Optional[str] = None  # the missing program, when the entry can't launch

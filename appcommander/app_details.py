@@ -4,6 +4,7 @@ from gi.repository import Adw, Gio, GLib, GObject, Gtk, Pango
 from . import appimage, backends, entries
 from .scanner import App, BACKEND_LABELS, APT, FLATPAK, SNAP, APPIMAGE, LOCAL, user_data_dir
 from .icon_picker import IconPicker
+from .operation_view import OperationView
 from .tags import MAIN_CATEGORIES, TagsGroup, join_tags, split_tags
 from .utils import (copy_to_clipboard, icon_image, open_containing_folder, open_in_text_editor,
                     run_async, trash)
@@ -143,11 +144,8 @@ class AppDetails(Adw.NavigationPage):
             buttons.append(b)
         box.append(buttons)
 
-        self.status_box = Gtk.Box(spacing=10, halign=Gtk.Align.CENTER, margin_top=20, visible=False)
-        self.status_box.append(Adw.Spinner())
-        self.status_label = Gtk.Label()
-        self.status_box.append(self.status_label)
-        box.append(self.status_box)
+        self.operation = OperationView(margin_top=20, visible=False)
+        box.append(self.operation)
 
         for group in self._menu_groups():
             box.append(group)
@@ -191,6 +189,11 @@ class AppDetails(Adw.NavigationPage):
                 exp.add_row(r)
             group.add(exp)
 
+
+        autostart = Adw.SwitchRow(title='Start at Login', active=entries.is_autostart(app),
+                                  subtitle='Launch automatically when you log in')
+        autostart.connect('notify::active', self._on_autostart_toggled)
+        group.add(autostart)
 
         self.visible_switch = Adw.SwitchRow(title='Show in App Menu', active=not app.hidden,
                                             subtitle='Hiding writes an override to your local applications folder')
@@ -403,12 +406,32 @@ class AppDetails(Adw.NavigationPage):
         self.get_root().toast(text)
 
     def _set_busy(self, text: str = None):
-        self.busy = text is not None
-        self.status_box.set_visible(self.busy)
-        self.status_label.set_label(text or '')
+        """Short busy state (no output), e.g. while asking apt what a removal would do."""
+        if text is None:
+            self.operation.finish()
+        else:
+            self.operation.start(text)
+            self.operation.expander.set_visible(False)
+        self._lock(text is not None)
+
+    def _start_operation(self, status: str):
+        self.operation.expander.set_visible(True)
+        op = self.operation.start(status)
+        self._lock(True)
+        return op
+
+    def _lock(self, busy: bool):
+        self.busy = busy
         for b in (self.launch_btn, self.update_btn, self.uninstall_btn):
-            b.set_sensitive(not self.busy and (b is not self.uninstall_btn or backends.can_uninstall(self.app)))
-        self.set_can_pop(not self.busy)
+            b.set_sensitive(not busy and (b is not self.uninstall_btn or backends.can_uninstall(self.app)))
+        self.set_can_pop(not busy)
+
+    def _operation_failed(self, what: str, op):
+        self._lock(False)
+        self.operation.finish('Cancelled' if op.cancelled else f'{what} failed — see the output below',
+                              keep=True)
+        if not op.cancelled:
+            self.operation.show_output()
 
     def _on_launch(self, *_):
         try:
@@ -440,6 +463,15 @@ class AppDetails(Adw.NavigationPage):
             return
         self.emit('changed', 'Hidden from app menu' if hidden else 'Shown in app menu')
 
+    def _on_autostart_toggled(self, switch, _pspec):
+        try:
+            entries.set_autostart(self.app, switch.get_active())
+        except OSError as e:
+            self._toast(f'Could not change autostart: {e.strerror}')
+            return
+        self._toast(f'{self.app.name} will start at login' if switch.get_active()
+                    else f'{self.app.name} won’t start at login')
+
     def _on_reset_override(self, *_):
         trash(self.app.user_override.path)
         self.emit('changed', 'Entry reset to default')
@@ -448,33 +480,23 @@ class AppDetails(Adw.NavigationPage):
     # ------------------------------------------------------------ update
 
     def _on_update(self, *_):
-        self._set_busy('Updating…')
-        app = self.app
-        if app.backend == APPIMAGE:
-            last = [-1]
+        op = self._start_operation(f'Updating {self.app.name}…')
+        cmds = backends.update_command([self.app])
+        run_async(backends.run_commands, lambda r, e: self._on_update_done(op, r, e), cmds, op)
 
-            def progress(fraction):
-                pct = int(fraction * 100)
-                if pct != last[0]:
-                    last[0] = pct
-                    GLib.idle_add(self.status_label.set_label, f'Downloading… {pct}%')
-
-            url = app.extra['update_check'].download_url
-            run_async(appimage.download_update, self._on_update_done, app.appimage_path, url, progress)
-            return
-        cmds = backends.update_command([app])
-        run_async(backends.run_commands, self._on_update_done, cmds)
-
-    def _on_update_done(self, result, error):
-        self._set_busy(None)
+    def _on_update_done(self, op, result, error):
         ok, log = result if result else (False, str(error))
-        if ok:
-            self.app.update_available = False
-            self.app.extra.pop('update_check', None)
-            self.update_btn.set_visible(False)
-            self.emit('changed', f'{self.app.name} was updated')
-        else:
-            self.get_root().show_log('Update failed', log)
+        if not ok:
+            if error:
+                op.output(str(error))
+            self._operation_failed('Update', op)
+            return
+        self._lock(False)
+        self.operation.finish()
+        self.app.update_available = False
+        self.app.extra.pop('update_check', None)
+        self.update_btn.set_visible(False)
+        self.emit('changed', f'{self.app.name} was updated')
 
     # ------------------------------------------------------------ uninstall
 
@@ -540,15 +562,18 @@ class AppDetails(Adw.NavigationPage):
         app = self.app
         delete_data = bool(self.delete_data_check and self.delete_data_check.get_active())
         cmd = backends.uninstall_command(app, delete_data)
-        self._set_busy('Uninstalling…')
-        run_async(backends.run_commands, self._on_uninstall_done, [cmd])
+        op = self._start_operation(f'Uninstalling {app.name}…')
+        run_async(backends.run_commands, lambda r, e: self._on_uninstall_done(op, r, e), [cmd], op)
 
-    def _on_uninstall_done(self, result, error):
-        self._set_busy(None)
+    def _on_uninstall_done(self, op, result, error):
         ok, log = result if result else (False, str(error))
         if not ok:
-            self.get_root().show_log('Uninstall failed', log)
+            if error:
+                op.output(str(error))
+            self._operation_failed('Uninstall', op)
             return
+        self._lock(False)
+        self.operation.finish()
         # Leftover local overrides would keep a broken launcher in the menu.
         override = self.app.user_override
         if override and override.data_dir == user_data_dir() and entries.is_our_override(override.path):

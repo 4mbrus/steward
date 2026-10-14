@@ -143,3 +143,78 @@ def store_icon(app: App, source: str) -> str:
     with open(dest, 'wb') as out:
         out.write(data)
     return dest
+
+
+# ---------------------------------------------------------------- autostart
+
+def user_autostart_dir() -> str:
+    return os.path.join(os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config'), 'autostart')
+
+
+def system_autostart_dirs() -> list:
+    dirs = os.environ.get('XDG_CONFIG_DIRS') or '/etc/xdg'
+    return [os.path.join(d, 'autostart') for d in dirs.split(':') if d]
+
+
+def _autostart_file(app: App):
+    """The autostart file that applies to the app (the user's one wins), or None."""
+    for d in [user_autostart_dir()] + system_autostart_dirs():
+        path = os.path.join(d, app.desktop_id)
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def is_autostart(app: App) -> bool:
+    path = _autostart_file(app)
+    if not path:
+        return False
+    with open(path, encoding='utf-8', errors='replace') as f:
+        keys = keys_in_group(f.read())
+    return keys.get('Hidden', 'false') != 'true' and keys.get('X-GNOME-Autostart-enabled', 'true') != 'false'
+
+
+def set_autostart(app: App, enabled: bool) -> str:
+    """Enable or disable starting the app at login. An existing autostart file (which may carry
+    app-specific options such as --minimized) is kept and only switched on or off."""
+    user_path = os.path.join(user_autostart_dir(), app.desktop_id)
+    source = _autostart_file(app)
+    if not source and not enabled:
+        return user_path
+    with open(source or app.effective.path, encoding='utf-8', errors='replace') as f:
+        text = f.read()
+    text = set_key(text, 'Hidden', 'false' if enabled else 'true')
+    text = set_key(text, 'X-GNOME-Autostart-enabled', 'true' if enabled else 'false')
+    os.makedirs(os.path.dirname(user_path), exist_ok=True)
+    with open(user_path, 'w', encoding='utf-8') as f:
+        f.write(text)
+    return user_path
+
+
+# ---------------------------------------------------------------- new launchers
+
+CREATED_MARKER = 'X-AppCommander-Created'
+
+
+def _escape(value: str) -> str:
+    return value.replace('\\', '\\\\').replace('\n', '\\n').replace('\t', '\\t')
+
+
+def create_launcher(name: str, command: str, terminal: bool = False) -> str:
+    """Write a new desktop entry to the user's applications folder. Returns its path."""
+    directory = os.path.join(user_data_dir(), 'applications')
+    os.makedirs(directory, exist_ok=True)
+    slug = re.sub(r'[^a-z0-9._-]+', '-', name.lower()).strip('-') or 'launcher'
+    path, n = os.path.join(directory, f'{slug}.desktop'), 1
+    while os.path.exists(path):
+        n += 1
+        path = os.path.join(directory, f'{slug}-{n}.desktop')
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write('[Desktop Entry]\n'
+                'Type=Application\n'
+                f'Name={_escape(name)}\n'
+                f'Exec={_escape(command)}\n'
+                'Icon=application-x-executable\n'
+                f'Terminal={"true" if terminal else "false"}\n'
+                f'{CREATED_MARKER}=true\n')
+    return path

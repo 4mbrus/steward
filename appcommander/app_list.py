@@ -1,9 +1,10 @@
 from gi.repository import Adw, GObject, Gtk, Pango
 
 from .scanner import App, BACKEND_LABELS, APT, FLATPAK, SNAP, APPIMAGE, LOCAL
-from .utils import icon_image
+from .utils import icon_image, load_setting, relative_time, save_setting
 
 CLAMP_SIZE = 640
+SORTS = [('name', 'Name'), ('size', 'Size'), ('recent', 'Recent')]
 FILTERS = [('all', 'All'), (APT, 'System'), (FLATPAK, 'Flatpak'), (SNAP, 'Snap'),
            (APPIMAGE, 'AppImage'), (LOCAL, 'Local')]
 
@@ -32,7 +33,8 @@ class AppRow(Gtk.ListBoxRow):
 
         meta = Gtk.Box(spacing=6, margin_top=3)
         meta.append(source_badge(app))
-        info = [x for x in (app.version, app.size) if x]
+        info = [x for x in (app.version, app.size,
+                            relative_time(app.installed_at) if app.installed_at else None) if x]
         if info:
             meta.append(Gtk.Label(label=' · '.join(info), css_classes=['dim-label', 'caption'],
                                   ellipsize=Pango.EllipsizeMode.END))
@@ -93,17 +95,28 @@ class AppList(Gtk.Box):
         self.filter_group = Adw.ToggleGroup(css_classes=['round'], halign=Gtk.Align.START, margin_bottom=15)
         self.filter_group.connect('notify::active-name', lambda *_: self._refilter())
         filter_scroll = Gtk.ScrolledWindow(child=self.filter_group, vscrollbar_policy=Gtk.PolicyType.NEVER,
-                                           propagate_natural_height=True)
+                                           propagate_natural_height=True, hexpand=True)
+        self.sort_dropdown = Gtk.DropDown.new_from_strings([label for _key, label in SORTS])
+        self.sort_dropdown.set_tooltip_text('Sort by name, by size (largest first), or by most recently installed or updated')
+        self.sort_dropdown.set_valign(Gtk.Align.START)
+        keys = [key for key, _label in SORTS]
+        saved = load_setting('sort', 'name')
+        self.sort_dropdown.set_selected(keys.index(saved) if saved in keys else 0)
+        self.sort_dropdown.connect('notify::selected', self._on_sort_changed)
+        filter_row = Gtk.Box(spacing=12)
+        filter_row.append(filter_scroll)
+        filter_row.append(self.sort_dropdown)
 
         self.listbox = Gtk.ListBox(css_classes=['boxed-list'], valign=Gtk.Align.START)
         self.listbox.connect('row-activated', lambda _lb, row: self.emit('selected-app', row.app))
         self.listbox.set_filter_func(self._filter_row)
+        self.listbox.set_sort_func(self._sort_rows)
 
         self.no_results = Adw.StatusPage(icon_name='edit-find-symbolic', title='No applications found',
                                          visible=False, css_classes=['compact'])
 
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        for w in (title_row, filter_scroll, self.listbox, self.no_results):
+        for w in (title_row, filter_row, self.listbox, self.no_results):
             main_box.append(w)
 
         clamp = Adw.Clamp(child=main_box, maximum_size=CLAMP_SIZE, margin_top=20, margin_bottom=20,
@@ -171,6 +184,28 @@ class AppList(Gtk.Box):
             for row in self.rows:
                 row.update_icon.set_visible(row.app.update_available)
             self._rebuild_filters()
+
+    # ------------------------------------------------------------ sorting
+
+    def _sort_key(self) -> str:
+        return SORTS[self.sort_dropdown.get_selected()][0]
+
+    def _sort_rows(self, a: AppRow, b: AppRow) -> int:
+        key = self._sort_key()
+        if key == 'size':
+            va, vb = -(a.app.size_bytes or 0), -(b.app.size_bytes or 0)
+        elif key == 'recent':
+            va, vb = -(a.app.installed_at or 0), -(b.app.installed_at or 0)
+        else:
+            va = vb = 0
+        if va != vb:
+            return -1 if va < vb else 1
+        na, nb = a.app.name.lower(), b.app.name.lower()
+        return (na > nb) - (na < nb)
+
+    def _on_sort_changed(self, *_):
+        save_setting('sort', self._sort_key())
+        self.listbox.invalidate_sort()
 
     # ------------------------------------------------------------ filtering
 

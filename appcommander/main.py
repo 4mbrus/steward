@@ -9,7 +9,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gdk, Gio, Gtk  # noqa: E402
 
 APP_ID = 'io.github.appcommander.AppCommander'
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 
 
 class Application(Adw.Application):
